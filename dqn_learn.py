@@ -348,7 +348,7 @@ def dqn_learing(
     
     
     num_flows = env.num_action
-    num_actions = num_flows ** 2
+    num_actions = 2 ** num_flows 
 
     ###############
     # BUILD MODEL #
@@ -392,6 +392,7 @@ def dqn_learing(
     best_mean_episode_reward = -float('inf')
     last_obs = env.reset()
     LOG_EVERY_N_STEPS = 10000
+    episode_rewards = []
 
     for t in count():
         ### Check stopping criterion
@@ -410,22 +411,24 @@ def dqn_learing(
         # Choose random action if not yet start learning
         if t > learning_starts:
             action = select_epilson_greedy_action(Q, recent_observations, t)[0, 0]
+        
         else:
             action = random.randrange(num_actions)
         # Convert the action to a binary format
-            action_binary = np.array([int(x) for x in f"{action:0{num_flows}b}"], dtype=bool)
-            obs, reward, done, _ = env.step(action_binary)
+        action_binary = np.array([int(x) for x in f"{action:0{num_flows}b}"], dtype=bool)
+        obs, reward, done, truncate = env.step(action_binary)
 
         # Advance one step
         # obs, reward, done, _ = env.step(action)
         # clip rewards between -1 and 1
-        reward = max(-1.0, min(reward, 1.0))
+        # reward = max(-1.0, min(reward, 1.0))
         # Store other info in replay memory
         replay_buffer.store_effect(last_idx, action, reward, done)
         # Resets the environment when reaching an episode boundary.
-        if done:
+        if done or truncate:
             obs = env.reset()
         last_obs = obs
+        
 
         ### Perform experience replay and train the network.
         # Note that this is only done if the replay buffer contains enough samples
@@ -482,22 +485,7 @@ def dqn_learing(
     
         # episode_rewards = env.simulator.packet_count  
         # Initialize a list to track rewards for the current episode
-        episode_rewards = []
 
-        for t in count():
-    # Step the environment
-            obs, reward, done, _ = env.step(action_binary)
-
-    # Flatten the observation (if required)
-            obs = np.array(obs).flatten()
-
-    # Append the reward to the list
-            episode_rewards.append(reward)
-
-    # Handle episode termination
-            if done:
-                obs = env.reset()
-                episode_rewards = []  # Clear the list for the next episode
 
         if len(episode_rewards) > 0:
             mean_episode_reward = np.mean(episode_rewards[-100:])
