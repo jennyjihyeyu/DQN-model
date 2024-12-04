@@ -2,7 +2,7 @@
 import argparse
 import numpy as np
 import torch.optim as optim
-from dqn_model import DQN
+from dqn_model import DQN_RAM
 from dqn_learn import OptimizerSpec, dqn_learing
 from utils.schedule import LinearSchedule
 from lib.rl_env import RLNetworkEnv
@@ -69,7 +69,7 @@ def main(env, num_timesteps):
 
     dqn_learing(
         env=env,
-        q_func=DQN,
+        q_func=DQN_RAM,
         optimizer_spec=optimizer_spec,
         exploration=exploration_schedule,
         stopping_criterion=stopping_criterion,
