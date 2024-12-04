@@ -390,7 +390,7 @@ def dqn_learing(
     num_param_updates = 0
     mean_episode_reward = -float('nan')
     best_mean_episode_reward = -float('inf')
-    last_obs = env.reset()
+    last_obs = env.reset().flatten() #flatten the last_obs
     LOG_EVERY_N_STEPS = 10000
     episode_rewards = []
 
@@ -426,8 +426,8 @@ def dqn_learing(
         replay_buffer.store_effect(last_idx, action, reward, done)
         # Resets the environment when reaching an episode boundary.
         if done or truncate:
-            obs = env.reset()
-        last_obs = obs
+            obs = env.reset().flatten() #flatten the obs
+        last_obs = obs.flatten() #flatten the obs
         
 
         ### Perform experience replay and train the network.
