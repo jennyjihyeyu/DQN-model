@@ -370,7 +370,7 @@ def dqn_learing(
         if sample > eps_threshold:
             obs = torch.from_numpy(obs).type(dtype).unsqueeze(0) 
             # Use volatile = True if variable is only used in inference mode, i.e. don’t save the history
-            return model(Variable(obs, volatile=True)).data.max(1)[1].cpu()
+            return model(Variable(obs, volatile=True)).data.max(1)[1].cpu()[:, None]
         else:
             return torch.IntTensor([[random.randrange(num_actions)]])
 
@@ -391,7 +391,7 @@ def dqn_learing(
     mean_episode_reward = -float('nan')
     best_mean_episode_reward = -float('inf')
     last_obs = np.array(env.reset()).flatten() #flatten the last_obs
-    LOG_EVERY_N_STEPS = 10000
+    LOG_EVERY_N_STEPS = 1000 #check the reward
     episode_rewards = []
 
     for t in count():
@@ -417,6 +417,7 @@ def dqn_learing(
         # Convert the action to a binary format
         action_binary = np.array([int(x) for x in f"{action:0{num_flows}b}"], dtype=bool)
         obs, reward, done, truncate = env.step(action_binary)
+        episode_rewards.append(reward) #we want to append the reward from the list
 
         # Advance one step
         # obs, reward, done, _ = env.step(action)
@@ -427,6 +428,7 @@ def dqn_learing(
         # Resets the environment when reaching an episode boundary.
         if done or truncate:
             obs = np.array(env.reset()).flatten() #flatten the obs
+            episode_rewards= []
         last_obs = np.array(obs).flatten() #flatten the obs
         
 
@@ -463,15 +465,15 @@ def dqn_learing(
             # Compute the target of the current Q values
             target_Q_values = rew_batch + (gamma * next_Q_values)
             # Compute Bellman error
-            bellman_error = target_Q_values - current_Q_values
+            bellman_error = target_Q_values - current_Q_values.flatten()
             # clip the bellman error between [-1 , 1]
             clipped_bellman_error = bellman_error.clamp(-1, 1)
             # Note: clipped_bellman_delta * -1 will be right gradient
-            d_error = clipped_bellman_error * -1.0
+            d_error = clipped_bellman_error * -1.0 
             # Clear previous gradients before backward pass
             optimizer.zero_grad()
             # run backward pass
-            current_Q_values.backward(d_error.data.unsqueeze(1))
+            current_Q_values.backward(d_error.detach().unsqueeze(1)) 
 
             # Perfom the update
             optimizer.step()
